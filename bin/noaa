@@ -28,7 +28,7 @@ import argparse
 import ConfigParser
 import os
 import sys
-
+sys.path.append('.')
 import noaa
 from noaa import exceptions
 from noaa import forecast

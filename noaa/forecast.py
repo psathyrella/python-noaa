@@ -129,18 +129,18 @@ def _daily_forecast_from_location_info(location_info, start_date=None,
     resp = utils.open_url(FORECAST_BY_DAY_URL, params)
     tree = utils.parse_xml(resp)
     
-    # ----------------------------------------------------------------------------------------
-    gen_url = ("http://www.weather.gov/forecasts/xml"
-                           "/sample_products/browser_interface"
-                           "/ndfdXMLclient.php")
-    tresp = utils.open_url(gen_url, params)
-    ttree = utils.parse_xml(tresp)
-    from xml.etree import ElementTree as ET
-    print ET.tostring(ttree.getroot())
-    for item in ttree.iter():
-        print item.text
-    import sys
-    sys.exit()
+    # # ----------------------------------------------------------------------------------------
+    # gen_url = ("http://www.weather.gov/forecasts/xml"
+    #                        "/sample_products/browser_interface"
+    #                        "/ndfdXMLclient.php")
+    # tresp = utils.open_url(gen_url, params)
+    # ttree = utils.parse_xml(tresp)
+    # from xml.etree import ElementTree as ET
+    # # print ET.tostring(ttree.getroot())
+    # for item in ttree.find_all('time-layout'):
+    #     print item
+    # import sys
+    # sys.exit()
     # ----------------------------------------------------------------------------------------
     
     if tree.getroot().tag == 'error':
