@@ -15,8 +15,11 @@ def get_time_layouts(root):
         layouts[name] = []
         for start in lout.iter('start-valid-time'):
             date_str, time_str = start.text.split('T')  # will raise ValueError if it doesn't split into to pieces
+            time_str, tzinfo_str = time_str.split('-')  # ignoring time zone info for now
             year, month, day = [ int(val) for val in date_str.split('-') ]
-            moment = datetime.datetime(year, month, day, hour, minute, second, microsecond, tzinfo)
+            hour, minute, second = [ int(val) for val in time_str.split(':') ]
+            moment = datetime.datetime(year, month, day, hour, minute, second)
+            print moment
             layouts[name].append(start.text)
         sys.exit()
     return layouts
