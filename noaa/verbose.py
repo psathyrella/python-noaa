@@ -195,7 +195,7 @@ def find_max_temp(pdata, day):
     # raise Exception('ERROR didn\'t find max temp for %d in %s' % (day, pdata['time-layout']))
     return None
 
-def prettify_values(data, debug=False):
+def prettify_values(data, ndays=5, debug=False):
     mintemps = data['Daily Minimum Temperature']
     maxtemps = data['Daily Maximum Temperature']
     liquid = combine_days('sum', data['Liquid Precipitation Amount'])
@@ -204,14 +204,63 @@ def prettify_values(data, debug=False):
     cloud = combine_days('mean', data['Cloud Cover Amount'])
     percent_precip = combine_days('mean', data['12 Hourly Probability of Precipitation'])
 
-    txtvals = {'tmax':[], 'tmin':[], 'liquid':[], 'snow':[], 'wind':[], 'cloud':[], 'precip':[]}
+    txtvals = {'days':[], 'tmax':[], 'tmin':[], 'liquid':[], 'snow':[], 'wind':[], 'cloud':[], 'precip':[]}
     if debug:
         print '%-5s    %4s   %5s%5s   %5s  %5s' % ('', 'hi lo', 'precip (snow)', '%', 'wind', 'cloud')
-    for iday in range(5):
+    rowlist = []
+    for iday in range(ndays):
         day = datetime.now() + timedelta(days=iday)
     
         tmax = find_max_temp(maxtemps, day.day)
         tmin = find_min_temp(mintemps, day.day, day.day+1)
+
+        row = ''
+        if tmax is not None:
+            row += ' %d' % tmax
+        if tmin is not None:
+            row += ' %d<br>' % tmin
+        if day.day in percent_precip:
+            row += ' %.0f<font size=1>%%</font>' % percent_precip[day.day]
+
+        # liquid
+        row += '<font color=blue><b>'
+        if day.day in liquid:
+            if liquid[day.day] > 0.0:
+                row += (' %.2f' % liquid[day.day]).replace('0.', '.')
+            else:
+                row += '   0'
+        else:
+            row += ' - '
+        row += '</b></font>'
+
+        # snow
+        row += '<font color=grey><b>'
+        if day.day in liquid:
+            if snow[day.day] > 0.0:
+                row += (' (%.2f)' % snow[day.day]).replace('0.', '.')
+            else:
+                row += '  '
+        else:
+            row += ' - '
+        row += '</b></font>'
+
+        row += '<br>'
+
+        # wind speed
+        if day.day in wind_speed:
+            row += ' %.0f' % wind_speed[day.day]
+            row += '<font size=1>mph</font>'
+        else:
+            row += ' - '
+        
+        # cloud cover
+        if day.day in cloud:
+            row += ' %.0f' % cloud[day.day]
+            row += '<font size=1>% cover</font>'
+        else:
+            row += ' - '
+        
+        rowlist.append(row)
 
         tv = txtvals
         tv['tmax'].append('-' if tmax is None else tmax)
@@ -223,12 +272,23 @@ def prettify_values(data, debug=False):
         tv['wind'].append(('%5.0f' % wind_speed[day.day]) if day.day in wind_speed else '-')
         tv['cloud'].append(('%5.0f' % cloud[day.day]) if day.day in cloud else '-')
         tv['precip'].append(('%5.0f' % percent_precip[day.day]) if day.day in percent_precip else '-')
+        tv['days'].append(weekdays[day.weekday()])
         if debug:
             print '%-6s %4s %-3s  %5s  %5s %5s   %5s  %5s' % (weekdays[day.weekday()], tv['tmax'][-1], tv['tmin'][-1], tv['liquid'][-1], tv['snow'][-1], tv['precip'][-1], tv['wind'][-1], tv['cloud'][-1])
 
-    
+    return tv, rowlist
+
 def verbosocast(tree):
     root = tree.getroot()
     time_layouts = get_time_layouts(root)
     data = parse_data(root, time_layouts)
-    prettify_values(data, debug=True)
+    point = root.find('data').find('location').find('point')
+    lat, lon = point.get('latitude'), point.get('longitude')
+    tv, rowlist = prettify_values(data, debug=True)
+    import HTML
+    rowlist.insert(0, ' %s <br> %s ' % (lat, lon))
+    table_vals = [rowlist,]
+    htmlcode = HTML.table(table_vals, header_row=['',] + tv['days'], col_width=['15%' for _ in range(len(table_vals[0]))])
+    with open('tmp.html', 'w') as outfile:
+        outfile.write(htmlcode)
+
