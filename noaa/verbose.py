@@ -195,36 +195,40 @@ def find_max_temp(pdata, day):
     # raise Exception('ERROR didn\'t find max temp for %d in %s' % (day, pdata['time-layout']))
     return None
 
-def prettify_values(data):
+def prettify_values(data, debug=False):
     mintemps = data['Daily Minimum Temperature']
     maxtemps = data['Daily Maximum Temperature']
     liquid = combine_days('sum', data['Liquid Precipitation Amount'])
     snow = combine_days('sum', data['Snow Amount'])
     wind_speed = combine_days('mean', data['Wind Speed'])
     cloud = combine_days('mean', data['Cloud Cover Amount'])
-    precip_percent = combine_days('mean', data['12 Hourly Probability of Precipitation'])
-    
+    percent_precip = combine_days('mean', data['12 Hourly Probability of Precipitation'])
+
+    txtvals = {'tmax':[], 'tmin':[], 'liquid':[], 'snow':[], 'wind':[], 'cloud':[], 'precip':[]}
+    if debug:
+        print '%-5s    %4s   %5s%5s   %5s  %5s' % ('', 'hi lo', 'precip (snow)', '%', 'wind', 'cloud')
     for iday in range(5):
         day = datetime.now() + timedelta(days=iday)
     
         tmax = find_max_temp(maxtemps, day.day)
         tmin = find_min_temp(mintemps, day.day, day.day+1)
-    
-        tmaxval = '-' if tmax is None else tmax
-        tminval = '-' if tmin is None else tmin
-        lval = ('%5.1f' % liquid[day.day]) if day.day in liquid else '-'
-        sval = ''
+
+        tv = txtvals
+        tv['tmax'].append('-' if tmax is None else tmax)
+        tv['tmin'].append('-' if tmin is None else tmin)
+        tv['liquid'].append(('%5.1f' % liquid[day.day]) if day.day in liquid else '-')
+        tv['snow'].append('')
         if day.day in snow and snow[day.day] > 0.0:
-            sval = '%5.1f' % snow[day.day]
-        wval = ('%5.0f' % wind_speed[day.day]) if day.day in wind_speed else '-'
-        cval = ('%5.0f' % cloud[day.day]) if day.day in cloud else '-'
-        ppval = ('%5.0f' % precip_percent[day.day]) if day.day in precip_percent else '-'
-        print '%-6s %4s %-3s  %5s  %5s %5s   %5s  %5s' % (weekdays[day.weekday()], tmaxval, tminval, lval, sval, ppval, wval, cval)
+            tv['snow'][-1] = '%5.1f' % snow[day.day]
+        tv['wind'].append(('%5.0f' % wind_speed[day.day]) if day.day in wind_speed else '-')
+        tv['cloud'].append(('%5.0f' % cloud[day.day]) if day.day in cloud else '-')
+        tv['precip'].append(('%5.0f' % percent_precip[day.day]) if day.day in percent_precip else '-')
+        if debug:
+            print '%-6s %4s %-3s  %5s  %5s %5s   %5s  %5s' % (weekdays[day.weekday()], tv['tmax'][-1], tv['tmin'][-1], tv['liquid'][-1], tv['snow'][-1], tv['precip'][-1], tv['wind'][-1], tv['cloud'][-1])
 
     
 def verbosocast(tree):
     root = tree.getroot()
     time_layouts = get_time_layouts(root)
     data = parse_data(root, time_layouts)
-    prettify_values(data)
-    print '%-5s    %4s   %5s%5s   %5s  %5s' % ('', 'hi lo', 'precip (snow)', '%', 'wind', 'cloud')
+    prettify_values(data, debug=True)
