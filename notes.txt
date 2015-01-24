@@ -1,0 +1,4 @@
+historical data:
+  http://www.noaa.gov/pastweather.html
+  http://www.ncdc.noaa.gov/index.php
+  http://www.ncdc.noaa.gov/cdo-web/

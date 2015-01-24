@@ -160,6 +160,8 @@ def make_parser():
                         help="don't colorize results.")
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + noaa.__version__)
+    parser.add_argument('--fname',
+                        help="Print info for all locations in <fname>")
     return parser
 
 
@@ -197,6 +199,19 @@ def args_overrides(args):
     if not sys.stdout.isatty():
         args.color = False
 
+def print_forecast(args, forecast_func):
+    with utils.die_on(exceptions.NOAAException):
+        pretty_location, fcast = forecast_func(args)
+
+    if args.heading:
+        print "Forecast for %s" % pretty_location
+
+    for datapoint in fcast:
+        print datapoint.date.strftime('%a'),
+        print format_conditions(datapoint.conditions, color=args.color),
+        print format_temp(datapoint.min_temp, color=args.color),
+        print format_temp(datapoint.max_temp, color=args.color),
+        print simple_temp_graph(datapoint.max_temp, color=args.color)
 
 def main():
     parser = make_parser()
@@ -216,19 +231,16 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    with utils.die_on(exceptions.NOAAException):
-        pretty_location, fcast = forecast_func(args)
-
-    if args.heading:
-        print "Forecast for %s" % pretty_location
-
-    for datapoint in fcast:
-        print datapoint.date.strftime('%a'),
-        print format_conditions(datapoint.conditions, color=args.color),
-        print format_temp(datapoint.min_temp, color=args.color),
-        print format_temp(datapoint.max_temp, color=args.color),
-        print simple_temp_graph(datapoint.max_temp, color=args.color)
-
+    if args.fname is None:
+        print_forecast(args, forecast_func)
+    else:
+        import csv
+        with open(args.fname) as location_file:
+            reader = csv.DictReader(location_file)
+            for line in reader:
+                print '\n%s:' % line['name']
+                args.location = (line['lat'], line['lon'])
+                print_forecast(args, forecast_func)
 
 if __name__ == "__main__":
     main()
